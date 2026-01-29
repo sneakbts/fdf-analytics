@@ -97,7 +97,7 @@ export function UniqueEarnersChart({ data, height = 400 }: UniqueEarnersChartPro
         }}
         tooltip={({ point }) => (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg">
-            <p className="text-white font-medium">{point.serieId}</p>
+            <p className="text-white font-medium">{point.seriesId}</p>
             <p className="text-gray-400 text-sm">
               {point.data.xFormatted}: <span className="text-white">{point.data.y} players</span>
             </p>
