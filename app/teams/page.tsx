@@ -1,17 +1,9 @@
 import { getSupabase } from "@/lib/supabase";
-import Link from "next/link";
-import { MarketCapByPosition } from "@/components/charts/MarketCapByPosition";
-import { TeamLeaderboardChart } from "@/components/charts/TeamLeaderboardChart";
+import { TeamsClient } from "./TeamsClient";
 
 export const revalidate = 300; // Cache for 5 minutes
 
 type TimeFilter = "1m" | "3m" | "all";
-
-const TIME_FILTERS: { value: TimeFilter; label: string }[] = [
-  { value: "1m", label: "Last Month" },
-  { value: "3m", label: "Last 3 Months" },
-  { value: "all", label: "All Time" },
-];
 
 function getDateRange(filter: TimeFilter): Date | null {
   if (filter === "all") return null;
@@ -38,6 +30,19 @@ interface TeamData {
   totalCirculatingShares: number;
   playerCount: number;
   tpPerDollar: number;
+}
+
+interface PlayerWithPrices {
+  id: string;
+  team_name: string | null;
+  circulating_shares: number | null;
+  prices: { price_usd: number }[] | null;
+}
+
+interface PerformanceRecord {
+  player_id: string;
+  match_date: string;
+  reward: number | null;
 }
 
 async function getMarketCapByPosition(): Promise<PositionMarketCap[]> {
@@ -69,7 +74,6 @@ async function getMarketCapByPosition(): Promise<PositionMarketCap[]> {
     const prices = player.prices as { price_usd: number }[] | null;
     const price = prices && prices.length > 0 ? prices[0].price_usd : 0;
     const circulatingShares = player.circulating_shares || 0;
-    // Calculate market cap as price × circulating_shares
     const marketCap = price * circulatingShares;
 
     if (marketCap > 0) {
@@ -85,9 +89,28 @@ async function getMarketCapByPosition(): Promise<PositionMarketCap[]> {
   }));
 }
 
-async function getTeamData(filter: TimeFilter): Promise<TeamData[]> {
+async function getAllPerformanceData(supabase: ReturnType<typeof getSupabase>): Promise<PerformanceRecord[]> {
+  const performances: PerformanceRecord[] = [];
+  let offset = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const { data } = await supabase
+      .from("performance")
+      .select("player_id, match_date, reward")
+      .range(offset, offset + pageSize - 1);
+
+    if (!data || data.length === 0) break;
+    performances.push(...data);
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return performances;
+}
+
+async function getTeamDataForAllFilters(): Promise<Record<TimeFilter, TeamData[]>> {
   const supabase = getSupabase();
-  const startDate = getDateRange(filter);
 
   // Get all players with team, prices, and circulating shares
   const { data: players } = await supabase
@@ -100,218 +123,83 @@ async function getTeamData(filter: TimeFilter): Promise<TeamData[]> {
     `)
     .not("team_name", "is", null);
 
-  if (!players) return [];
+  if (!players) return { "1m": [], "3m": [], all: [] };
 
-  // Get TP data with pagination
-  const playerTP: Record<string, number> = {};
-  let offset = 0;
-  const pageSize = 1000;
+  // Get ALL performance data once
+  const allPerformances = await getAllPerformanceData(supabase);
 
-  while (true) {
-    let query = supabase
-      .from("performance")
-      .select("player_id, reward")
-      .range(offset, offset + pageSize - 1);
+  // Calculate for each time filter
+  const filters: TimeFilter[] = ["1m", "3m", "all"];
+  const result: Record<TimeFilter, TeamData[]> = { "1m": [], "3m": [], all: [] };
 
-    if (startDate) {
-      query = query.gte("match_date", startDate.toISOString().split("T")[0]);
-    }
+  for (const filter of filters) {
+    const startDate = getDateRange(filter);
+    const startDateStr = startDate ? startDate.toISOString().split("T")[0] : null;
 
-    const { data: performances } = await query;
-    if (!performances || performances.length === 0) break;
+    // Filter performances by date
+    const filteredPerformances = startDateStr
+      ? allPerformances.filter((p) => p.match_date >= startDateStr)
+      : allPerformances;
 
-    performances.forEach((p) => {
+    // Aggregate TP by player
+    const playerTP: Record<string, number> = {};
+    filteredPerformances.forEach((p) => {
       if (p.reward && p.reward > 0) {
         playerTP[p.player_id] = (playerTP[p.player_id] || 0) + p.reward;
       }
     });
 
-    if (performances.length < pageSize) break;
-    offset += pageSize;
+    // Aggregate by team
+    const teamData: Record<string, { totalTP: number; totalMarketCap: number; totalCirculatingShares: number; playerCount: number }> = {};
+
+    (players as PlayerWithPrices[]).forEach((player) => {
+      const team = player.team_name;
+      if (!team) return;
+
+      if (!teamData[team]) {
+        teamData[team] = { totalTP: 0, totalMarketCap: 0, totalCirculatingShares: 0, playerCount: 0 };
+      }
+
+      const prices = player.prices;
+      const price = prices && prices.length > 0 ? prices[0].price_usd : 0;
+      const circulatingShares = player.circulating_shares || 0;
+      const marketCap = price * circulatingShares;
+      const tp = playerTP[player.id] || 0;
+
+      teamData[team].totalTP += tp;
+      teamData[team].totalMarketCap += marketCap;
+      teamData[team].totalCirculatingShares += circulatingShares;
+      teamData[team].playerCount++;
+    });
+
+    result[filter] = Object.entries(teamData)
+      .map(([team, data]) => ({
+        team,
+        totalTP: data.totalTP,
+        totalMarketCap: data.totalMarketCap,
+        totalCirculatingShares: data.totalCirculatingShares,
+        playerCount: data.playerCount,
+        tpPerDollar: data.totalMarketCap > 0
+          ? (data.totalTP / data.totalMarketCap) * 100
+          : 0,
+      }))
+      .filter((t) => t.playerCount > 0)
+      .sort((a, b) => b.totalTP - a.totalTP);
   }
 
-  // Aggregate by team
-  const teamData: Record<string, { totalTP: number; totalMarketCap: number; totalCirculatingShares: number; playerCount: number }> = {};
-
-  players.forEach((player) => {
-    const team = player.team_name;
-    if (!team) return;
-
-    if (!teamData[team]) {
-      teamData[team] = { totalTP: 0, totalMarketCap: 0, totalCirculatingShares: 0, playerCount: 0 };
-    }
-
-    const prices = player.prices as { price_usd: number }[] | null;
-    const price = prices && prices.length > 0 ? prices[0].price_usd : 0;
-    const circulatingShares = player.circulating_shares || 0;
-    // Calculate market cap as price × circulating_shares
-    const marketCap = price * circulatingShares;
-    const tp = playerTP[player.id] || 0;
-
-    teamData[team].totalTP += tp;
-    teamData[team].totalMarketCap += marketCap;
-    teamData[team].totalCirculatingShares += circulatingShares;
-    teamData[team].playerCount++;
-  });
-
-  return Object.entries(teamData)
-    .map(([team, data]) => ({
-      team,
-      totalTP: data.totalTP,
-      totalMarketCap: data.totalMarketCap,
-      totalCirculatingShares: data.totalCirculatingShares,
-      playerCount: data.playerCount,
-      // TP per $100 of market cap = (totalTP / totalMarketCap) * 100
-      tpPerDollar: data.totalMarketCap > 0
-        ? (data.totalTP / data.totalMarketCap) * 100
-        : 0,
-    }))
-    .filter((t) => t.playerCount > 0)
-    .sort((a, b) => b.totalTP - a.totalTP);
+  return result;
 }
 
-function formatTP(value: number): string {
-  if (value >= 1000000) return `${(value / 1000000).toFixed(2)}M`;
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
-  return value.toFixed(0);
-}
-
-function formatMarketCap(value: number): string {
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-  return `$${value.toFixed(0)}`;
-}
-
-export default async function TeamsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
-  const params = await searchParams;
-  const filter = (params.filter as TimeFilter) || "all";
-
+export default async function TeamsPage() {
   const [marketCapByPosition, teamData] = await Promise.all([
     getMarketCapByPosition(),
-    getTeamData(filter),
+    getTeamDataForAllFilters(),
   ]);
 
-  // Sort teams by TP per dollar for value ranking
-  const teamsByValue = [...teamData].sort((a, b) => b.tpPerDollar - a.tpPerDollar);
-
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Team Analytics</h1>
-          <p className="text-gray-400">Market cap and performance by team and position</p>
-        </div>
-
-        {/* Market Cap by Position */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold mb-4">Market Cap by Position</h2>
-          <MarketCapByPosition data={marketCapByPosition} />
-        </div>
-
-        {/* Time Filters */}
-        <div className="flex gap-2 mb-6">
-          {TIME_FILTERS.map((tf) => (
-            <Link
-              key={tf.value}
-              href={`/teams?filter=${tf.value}`}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                filter === tf.value
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-              }`}
-            >
-              {tf.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Team Charts */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-12">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Team TP Leaderboard</h2>
-            <TeamLeaderboardChart data={teamData.slice(0, 15)} metric="totalTP" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Team TP Efficiency</h2>
-            <TeamLeaderboardChart data={teamsByValue.slice(0, 15)} metric="tpPerDollar" />
-          </div>
-        </div>
-
-        {/* Team Tables */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* TP Leaderboard Table */}
-          <div className="bg-gray-900 rounded-lg overflow-hidden">
-            <div className="bg-gray-800 px-4 py-3 border-b border-gray-700">
-              <h3 className="font-semibold">Total TP by Team</h3>
-            </div>
-            <table className="w-full">
-              <thead className="bg-gray-800/50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400">#</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400">Team</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Players</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Total TP</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Market Cap</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {teamData.slice(0, 20).map((team, index) => (
-                  <tr key={team.team} className="hover:bg-gray-800/50">
-                    <td className="px-4 py-2 text-sm text-gray-500">{index + 1}</td>
-                    <td className="px-4 py-2 text-sm font-medium">{team.team}</td>
-                    <td className="px-4 py-2 text-sm text-right text-gray-400">{team.playerCount}</td>
-                    <td className="px-4 py-2 text-sm text-right font-mono text-green-400">
-                      {formatTP(team.totalTP)}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-right font-mono text-gray-300">
-                      {formatMarketCap(team.totalMarketCap)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Value Ranking Table */}
-          <div className="bg-gray-900 rounded-lg overflow-hidden">
-            <div className="bg-gray-800 px-4 py-3 border-b border-gray-700">
-              <h3 className="font-semibold">Team TP Efficiency</h3>
-            </div>
-            <table className="w-full">
-              <thead className="bg-gray-800/50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400">#</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400">Team</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Total TP</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Market Cap</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Efficiency</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {teamsByValue.slice(0, 20).map((team, index) => (
-                  <tr key={team.team} className="hover:bg-gray-800/50">
-                    <td className="px-4 py-2 text-sm text-gray-500">{index + 1}</td>
-                    <td className="px-4 py-2 text-sm font-medium">{team.team}</td>
-                    <td className="px-4 py-2 text-sm text-right font-mono text-green-400">
-                      {formatTP(team.totalTP)}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-right font-mono text-gray-300">
-                      {formatMarketCap(team.totalMarketCap)}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-right font-mono text-blue-400">
-                      {formatTP(team.tpPerDollar)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+    <TeamsClient
+      marketCapByPosition={marketCapByPosition}
+      teamData={teamData}
+    />
   );
 }
