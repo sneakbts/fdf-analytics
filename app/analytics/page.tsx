@@ -6,7 +6,7 @@ import { UniqueEarnersChart } from "@/components/charts/UniqueEarnersChart";
 import { TopTPPlayersChart } from "@/components/charts/TopTPPlayersChart";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes
 
 type TimeFilter = "1m" | "3m" | "all";
 

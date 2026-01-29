@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MarketCapByPosition } from "@/components/charts/MarketCapByPosition";
 import { TeamLeaderboardChart } from "@/components/charts/TeamLeaderboardChart";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes
 
 type TimeFilter = "1m" | "3m" | "all";
 

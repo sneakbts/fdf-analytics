@@ -68,7 +68,7 @@ async function getPlayersWithPrices(): Promise<PlayerWithLatestPrice[]> {
   });
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes
 
 export default async function PlayersPage() {
   const players = await getPlayersWithPrices();

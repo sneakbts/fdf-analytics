@@ -53,7 +53,7 @@ async function getPlayerData(id: string) {
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes
 
 export default async function PlayerDetailPage({ params }: PlayerPageProps) {
   const { id } = await params;
