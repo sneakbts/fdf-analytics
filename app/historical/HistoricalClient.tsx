@@ -244,6 +244,39 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     },
   ];
 
+  // Calculate max ranking for tick values
+  const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
+  const tickValues = [1, 2, 3];
+  if (maxRanking > 5) tickValues.push(5);
+  if (maxRanking > 10) tickValues.push(10);
+  if (maxRanking > 15) tickValues.push(15);
+  if (maxRanking > 20) tickValues.push(20);
+  if (maxRanking > 25) tickValues.push(25);
+
+  // Custom layer to render points with different sizes for top 3
+  const customPointLayer = ({ points }: { points: Array<{ x: number; y: number; data: { y: number } }> }) => (
+    <g>
+      {points.map((point, index) => {
+        const ranking = point.data.y;
+        const isTopThree = ranking <= 3;
+        const size = isTopThree ? 12 : 6;
+        const color = ranking === 1 ? "#FFD700" : ranking === 2 ? "#C0C0C0" : ranking === 3 ? "#CD7F32" : "#3B82F6";
+
+        return (
+          <circle
+            key={index}
+            cx={point.x}
+            cy={point.y}
+            r={size / 2}
+            fill={isTopThree ? color : "#1F2937"}
+            stroke={color}
+            strokeWidth={2}
+          />
+        );
+      })}
+    </g>
+  );
+
   return (
     <div style={{ height: 300 }}>
       <ResponsiveLine
@@ -255,10 +288,7 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
         curve="monotoneX"
         colors={["#3B82F6"]}
         lineWidth={2}
-        pointSize={6}
-        pointBorderWidth={2}
-        pointBorderColor="#3B82F6"
-        pointColor="#1F2937"
+        enablePoints={false}
         enableGridX={false}
         axisBottom={{
           tickSize: 5,
@@ -269,6 +299,7 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
         axisLeft={{
           tickSize: 5,
           tickPadding: 5,
+          tickValues: tickValues,
         }}
         theme={{
           background: "transparent",
@@ -277,15 +308,18 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
           grid: { line: { stroke: "#374151", strokeDasharray: "3 3" } },
           crosshair: { line: { stroke: "#9CA3AF", strokeWidth: 1 } },
         }}
+        layers={["grid", "markers", "axes", "areas", "crosshair", "lines", customPointLayer, "slices", "mesh", "legends"]}
         useMesh={true}
         tooltip={({ point }) => {
           const data = point.data as { x: Date; y: number };
+          const ranking = data.y;
+          const medal = ranking === 1 ? " (Gold)" : ranking === 2 ? " (Silver)" : ranking === 3 ? " (Bronze)" : "";
           return (
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-2 shadow-lg">
               <p className="text-white font-medium text-sm">
                 {data.x.toLocaleDateString()}
               </p>
-              <p className="text-blue-400 text-sm">Rank #{data.y}</p>
+              <p className="text-blue-400 text-sm">Rank #{ranking}{medal}</p>
             </div>
           );
         }}
