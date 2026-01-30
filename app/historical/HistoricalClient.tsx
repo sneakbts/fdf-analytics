@@ -246,33 +246,11 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
 
   // Calculate max ranking for tick values
   const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
-  const tickValues = [1, 2, 3, 5];
+  const tickValues = [1, 5];
   if (maxRanking > 10) tickValues.push(10);
   if (maxRanking > 15) tickValues.push(15);
   if (maxRanking > 20) tickValues.push(20);
   if (maxRanking > 25) tickValues.push(25);
-
-  // Custom tick renderer to make 1, 2, 3 bigger
-  const renderTick = (tick: { value: number; x: number; y: number }) => {
-    const isTopThree = tick.value <= 3;
-    return (
-      <g transform={`translate(${tick.x},${tick.y})`}>
-        <text
-          x={-20}
-          y={0}
-          textAnchor="end"
-          dominantBaseline="middle"
-          style={{
-            fill: isTopThree ? "#FFD700" : "#9CA3AF",
-            fontSize: isTopThree ? 16 : 12,
-            fontWeight: isTopThree ? "bold" : "normal",
-          }}
-        >
-          {tick.value}
-        </text>
-      </g>
-    );
-  };
 
   return (
     <div style={{ height: 300 }}>
@@ -300,7 +278,6 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
           tickSize: 5,
           tickPadding: 5,
           tickValues: tickValues,
-          renderTick: renderTick,
         }}
         theme={{
           background: "transparent",
