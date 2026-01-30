@@ -36,6 +36,9 @@ export default function RootLayout({
                 <a href="/compare" className="text-gray-300 hover:text-white transition-colors">
                   Compare
                 </a>
+                <a href="/historical" className="text-gray-300 hover:text-white transition-colors">
+                  Historical
+                </a>
               </div>
             </div>
           </div>
