@@ -245,8 +245,9 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
   ];
 
   // Calculate max ranking for tick values
+  // Show 1, 2, 3 individually, then 5, 10, 15, etc.
   const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
-  const tickValues = [1, 5];
+  const tickValues = [1, 2, 3, 5];
   if (maxRanking > 10) tickValues.push(10);
   if (maxRanking > 15) tickValues.push(15);
   if (maxRanking > 20) tickValues.push(20);
