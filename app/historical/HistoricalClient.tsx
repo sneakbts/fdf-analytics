@@ -233,16 +233,16 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     );
   }
 
-  // Custom scale: 1-2-3 evenly spaced, then compress 4+
-  // Rank 1 → 0, Rank 2 → 1, Rank 3 → 2, then 4+ compressed
+  // Custom scale: 1-2-3 evenly spaced with large intervals, then compress 4+
+  // Each rank 1-2-3 gets 2 units of space, then 4+ heavily compressed
   const transformRank = (rank: number): number => {
-    if (rank <= 3) return rank - 1; // 1→0, 2→1, 3→2
-    return 2 + (rank - 3) / 4; // 4+ compressed (4→2.25, 5→2.5, 10→3.75, 20→6.25)
+    if (rank <= 3) return (rank - 1) * 2; // 1→0, 2→2, 3→4
+    return 4 + (rank - 3) / 3; // 4+ compressed (5→4.67, 10→6.33, 20→9.67, 30→13)
   };
 
   const inverseTransform = (val: number): number => {
-    if (val <= 2) return val + 1; // 0→1, 1→2, 2→3
-    return (val - 2) * 4 + 3; // reverse the compression
+    if (val <= 4) return val / 2 + 1; // 0→1, 2→2, 4→3
+    return (val - 4) * 3 + 3; // reverse the compression
   };
 
   const chartData = [
