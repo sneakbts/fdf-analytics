@@ -254,28 +254,32 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
   if (maxRanking > 25) tickValues.push(25);
 
   // Custom layer to render points with different sizes for top 3
-  const customPointLayer = ({ points }: { points: Array<{ x: number; y: number; data: { y: number } }> }) => (
-    <g>
-      {points.map((point, index) => {
-        const ranking = point.data.y;
-        const isTopThree = ranking <= 3;
-        const size = isTopThree ? 12 : 6;
-        const color = ranking === 1 ? "#FFD700" : ranking === 2 ? "#C0C0C0" : ranking === 3 ? "#CD7F32" : "#3B82F6";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const customPointLayer = (props: any) => {
+    const { points } = props;
+    return (
+      <g>
+        {points.map((point: { x: number; y: number; data: { y: number }; id: string }, index: number) => {
+          const ranking = point.data.y;
+          const isTopThree = ranking <= 3;
+          const size = isTopThree ? 12 : 6;
+          const color = ranking === 1 ? "#FFD700" : ranking === 2 ? "#C0C0C0" : ranking === 3 ? "#CD7F32" : "#3B82F6";
 
-        return (
-          <circle
-            key={index}
-            cx={point.x}
-            cy={point.y}
-            r={size / 2}
-            fill={isTopThree ? color : "#1F2937"}
-            stroke={color}
-            strokeWidth={2}
-          />
-        );
-      })}
-    </g>
-  );
+          return (
+            <circle
+              key={point.id || index}
+              cx={point.x}
+              cy={point.y}
+              r={size / 2}
+              fill={isTopThree ? color : "#1F2937"}
+              stroke={color}
+              strokeWidth={2}
+            />
+          );
+        })}
+      </g>
+    );
+  };
 
   return (
     <div style={{ height: 300 }}>
