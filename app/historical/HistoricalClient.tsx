@@ -233,16 +233,23 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     );
   }
 
-  // Custom scale: 1-2-3 evenly spaced with large intervals, then compress 4+
-  // Each rank 1-2-3 gets 2 units of space, then 4+ heavily compressed
+  // Custom scale: 1→2, 2→3, 3→5 each get 5 visual units, then linear from 5
+  // So ranks 1,2,3 each get their own "row" as tall as 5-10, 10-15, etc.
   const transformRank = (rank: number): number => {
-    if (rank <= 3) return (rank - 1) * 2; // 1→0, 2→2, 3→4
-    return 4 + (rank - 3) / 3; // 4+ compressed (5→4.67, 10→6.33, 20→9.67, 30→13)
+    if (rank === 1) return 0;
+    if (rank === 2) return 5;
+    if (rank === 3) return 10;
+    if (rank === 4) return 12.5; // interpolate between 3 and 5
+    // rank >= 5: each rank = 1 visual unit, starting at position 15
+    return rank + 10; // 5→15, 10→20, 15→25, 20→30, etc.
   };
 
   const inverseTransform = (val: number): number => {
-    if (val <= 4) return val / 2 + 1; // 0→1, 2→2, 4→3
-    return (val - 4) * 3 + 3; // reverse the compression
+    if (val === 0) return 1;
+    if (val === 5) return 2;
+    if (val === 10) return 3;
+    if (val < 15) return 4;
+    return val - 10; // 15→5, 20→10, 25→15, 30→20
   };
 
   const chartData = [
@@ -257,11 +264,13 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     },
   ];
 
-  // Calculate tick values in transformed space
+  // Tick values: show 1, 2, 3, 5, 10, 15, 20, etc.
   const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
   const displayTicks = [1, 2, 3, 5, 10];
-  if (maxRanking > 15) displayTicks.push(20);
-  if (maxRanking > 25) displayTicks.push(30);
+  if (maxRanking > 12) displayTicks.push(15);
+  if (maxRanking > 17) displayTicks.push(20);
+  if (maxRanking > 22) displayTicks.push(25);
+  if (maxRanking > 27) displayTicks.push(30);
   const tickValues = displayTicks.map(transformRank);
 
   return (
