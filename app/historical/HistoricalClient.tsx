@@ -440,7 +440,7 @@ export function HistoricalClient({
 
             {/* Price Chart */}
             <div className="bg-gray-900 rounded-lg p-4 mb-8">
-              <h3 className="text-lg font-semibold mb-4">Price History</h3>
+              <h3 className="text-lg font-semibold mb-4">Price History (Limited Price Data For Now)</h3>
               <PriceChart data={playerData.priceHistory} />
             </div>
 
