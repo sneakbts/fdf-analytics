@@ -222,7 +222,7 @@ function CumulativeTPChart({ data }: { data: { date: string; total: number }[] }
   );
 }
 
-function RankingChart({ data }: { data: PerformanceRecord[] }) {
+function RankingChart({ data, position }: { data: PerformanceRecord[]; position: string }) {
   const rankingData = data.filter((d) => d.ranking !== null);
 
   if (rankingData.length === 0) {
@@ -233,23 +233,45 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     );
   }
 
-  // Custom scale: 1→2, 2→3, 3→5 each get 5 visual units, then linear from 5
-  // So ranks 1,2,3 each get their own "row" as tall as 5-10, 10-15, etc.
+  // For GK: ranks 1,2,3 get their own row, then linear from 5
+  // For MID, DEF, FWD: ranks 1,2,3,4,5 each get their own row, then linear from 5
+  const isGoalkeeper = position === "Goalkeeper";
+
   const transformRank = (rank: number): number => {
-    if (rank === 1) return 0;
-    if (rank === 2) return 5;
-    if (rank === 3) return 10;
-    if (rank === 4) return 12.5; // interpolate between 3 and 5
-    // rank >= 5: each rank = 1 visual unit, starting at position 15
-    return rank + 10; // 5→15, 10→20, 15→25, 20→30, etc.
+    if (isGoalkeeper) {
+      // GK: 1,2,3 spaced, then linear
+      if (rank === 1) return 0;
+      if (rank === 2) return 5;
+      if (rank === 3) return 10;
+      if (rank === 4) return 12.5;
+      return rank + 10; // 5→15, 10→20, etc.
+    } else {
+      // MID, DEF, FWD: 1,2,3,4,5 each spaced, then linear
+      if (rank === 1) return 0;
+      if (rank === 2) return 5;
+      if (rank === 3) return 10;
+      if (rank === 4) return 15;
+      if (rank === 5) return 20;
+      // rank >= 6: linear from position 20
+      return 20 + (rank - 5); // 6→21, 10→25, 15→30, 20→35
+    }
   };
 
   const inverseTransform = (val: number): number => {
-    if (val === 0) return 1;
-    if (val === 5) return 2;
-    if (val === 10) return 3;
-    if (val < 15) return 4;
-    return val - 10; // 15→5, 20→10, 25→15, 30→20
+    if (isGoalkeeper) {
+      if (val === 0) return 1;
+      if (val === 5) return 2;
+      if (val === 10) return 3;
+      if (val < 15) return 4;
+      return val - 10;
+    } else {
+      if (val === 0) return 1;
+      if (val === 5) return 2;
+      if (val === 10) return 3;
+      if (val === 15) return 4;
+      if (val === 20) return 5;
+      return val - 15; // 21→6, 25→10, 30→15
+    }
   };
 
   const chartData = [
@@ -264,9 +286,9 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     },
   ];
 
-  // Tick values: show 1, 2, 3, 5, 10, 15, 20, etc.
+  // Tick values based on position
   const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
-  const displayTicks = [1, 2, 3, 5, 10];
+  const displayTicks = isGoalkeeper ? [1, 2, 3, 5, 10] : [1, 2, 3, 4, 5, 10];
   if (maxRanking > 12) displayTicks.push(15);
   if (maxRanking > 17) displayTicks.push(20);
   if (maxRanking > 22) displayTicks.push(25);
@@ -492,7 +514,7 @@ export function HistoricalClient({
             <div className="bg-gray-900 rounded-lg p-4 mb-8">
               <h3 className="text-lg font-semibold mb-4">Ranking Over Time</h3>
               <p className="text-gray-500 text-sm mb-2">Lower is better</p>
-              <RankingChart data={playerData.performances} />
+              <RankingChart data={playerData.performances} position={playerData.position} />
             </div>
 
             {/* Price Chart */}
