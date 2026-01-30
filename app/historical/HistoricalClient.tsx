@@ -281,27 +281,16 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
       <g>
         {points.map((point: any, index: number) => {
           const originalRank = point.data.originalRank;
-          let fillColor = "#1F2937"; // default dark fill
-          let strokeColor = "#3B82F6"; // default blue stroke
-
-          if (originalRank === 1) {
-            fillColor = "#FFD700"; // gold
-            strokeColor = "#FFD700";
-          } else if (originalRank === 2) {
-            fillColor = "#C0C0C0"; // silver
-            strokeColor = "#C0C0C0";
-          } else if (originalRank === 3) {
-            fillColor = "#CD7F32"; // bronze
-            strokeColor = "#CD7F32";
-          }
+          const isTopThree = originalRank <= 3;
+          const strokeColor = isTopThree ? "#22C55E" : "#3B82F6"; // green for top 3, blue otherwise
 
           return (
             <circle
               key={point.id || index}
               cx={point.x}
               cy={point.y}
-              r={originalRank <= 3 ? 6 : 4}
-              fill={fillColor}
+              r={4}
+              fill="#1F2937"
               stroke={strokeColor}
               strokeWidth={2}
             />
