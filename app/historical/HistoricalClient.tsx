@@ -233,23 +233,36 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
     );
   }
 
+  // Custom scale: 1-2-3 evenly spaced, then compress 4+
+  // Rank 1 → 0, Rank 2 → 1, Rank 3 → 2, then 4+ compressed
+  const transformRank = (rank: number): number => {
+    if (rank <= 3) return rank - 1; // 1→0, 2→1, 3→2
+    return 2 + (rank - 3) / 4; // 4+ compressed (4→2.25, 5→2.5, 10→3.75, 20→6.25)
+  };
+
+  const inverseTransform = (val: number): number => {
+    if (val <= 2) return val + 1; // 0→1, 1→2, 2→3
+    return (val - 2) * 4 + 3; // reverse the compression
+  };
+
   const chartData = [
     {
       id: "Ranking",
       color: "#3B82F6",
       data: rankingData.map((d) => ({
         x: new Date(d.match_date),
-        y: d.ranking,
+        y: transformRank(d.ranking!),
+        originalRank: d.ranking,
       })),
     },
   ];
 
-  // Calculate max ranking for tick values
-  // Show 1, 2, 3 individually, then 5, 10, 20, etc.
+  // Calculate tick values in transformed space
   const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
-  const tickValues = [1, 2, 3, 5, 10];
-  if (maxRanking > 20) tickValues.push(20);
-  if (maxRanking > 30) tickValues.push(30);
+  const displayTicks = [1, 2, 3, 5, 10];
+  if (maxRanking > 15) displayTicks.push(20);
+  if (maxRanking > 25) displayTicks.push(30);
+  const tickValues = displayTicks.map(transformRank);
 
   return (
     <div style={{ height: 300 }}>
@@ -258,7 +271,7 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
         margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
         xScale={{ type: "time", format: "native", useUTC: false }}
         xFormat="time:%Y-%m-%d"
-        yScale={{ type: "log", base: 2, min: 1, max: "auto", reverse: true }}
+        yScale={{ type: "linear", min: 0, max: "auto", reverse: true }}
         curve="monotoneX"
         colors={["#3B82F6"]}
         lineWidth={2}
@@ -277,6 +290,7 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
           tickSize: 5,
           tickPadding: 5,
           tickValues: tickValues,
+          format: (v) => Math.round(inverseTransform(Number(v))),
         }}
         theme={{
           background: "transparent",
@@ -287,13 +301,14 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
         }}
         useMesh={true}
         tooltip={({ point }) => {
-          const data = point.data as { x: Date; y: number };
+          const data = point.data as { x: Date; y: number; originalRank?: number };
+          const rank = data.originalRank || Math.round(inverseTransform(data.y));
           return (
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-2 shadow-lg">
               <p className="text-white font-medium text-sm">
                 {data.x.toLocaleDateString()}
               </p>
-              <p className="text-blue-400 text-sm">Rank #{data.y}</p>
+              <p className="text-blue-400 text-sm">Rank #{rank}</p>
             </div>
           );
         }}
