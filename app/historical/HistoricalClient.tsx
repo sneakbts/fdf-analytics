@@ -413,7 +413,7 @@ export function HistoricalClient({
               />
               <StatCard
                 label="Earned TP"
-                value={`${playerData.stats.tpGames}x`}
+                value={`${playerData.stats.tpGames} Times`}
               />
               <StatCard
                 label="Avg Score"
