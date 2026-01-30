@@ -31,8 +31,8 @@ interface PlayerHistoricalData {
     avgScore: number;
     avgRanking: number;
     bestRanking: number;
-    worstRanking: number;
     tpRate: number;
+    tpGames: number;
     firstGame: string;
     lastGame: string;
   };
@@ -91,8 +91,8 @@ async function getPlayerHistoricalData(playerId: string): Promise<PlayerHistoric
         avgScore: 0,
         avgRanking: 0,
         bestRanking: 0,
-        worstRanking: 0,
         tpRate: 0,
+        tpGames: 0,
         firstGame: "-",
         lastGame: "-",
       },
@@ -137,8 +137,8 @@ async function getPlayerHistoricalData(playerId: string): Promise<PlayerHistoric
     avgScore: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0,
     avgRanking: rankings.length > 0 ? rankings.reduce((a, b) => a + b, 0) / rankings.length : 0,
     bestRanking: rankings.length > 0 ? Math.min(...rankings) : 0,
-    worstRanking: rankings.length > 0 ? Math.max(...rankings) : 0,
     tpRate: performances.length > 0 ? (tpGames / performances.length) * 100 : 0,
+    tpGames,
     firstGame: performances[0].match_date,
     lastGame: performances[performances.length - 1].match_date,
   };

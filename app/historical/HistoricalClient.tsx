@@ -32,8 +32,8 @@ interface PlayerHistoricalData {
     avgScore: number;
     avgRanking: number;
     bestRanking: number;
-    worstRanking: number;
     tpRate: number;
+    tpGames: number;
     firstGame: string;
     lastGame: string;
   };
@@ -402,28 +402,26 @@ export function HistoricalClient({
               <StatCard
                 label="Total Games"
                 value={playerData.stats.totalGames.toString()}
-                subValue={`${playerData.stats.firstGame} to ${playerData.stats.lastGame}`}
               />
               <StatCard
                 label="Total TP Earned"
                 value={formatTP(playerData.stats.totalTP)}
-                subValue={`${playerData.stats.tpRate.toFixed(1)}% TP rate`}
+              />
+              <StatCard
+                label="TP Rate"
+                value={`${playerData.stats.tpRate.toFixed(1)}%`}
+              />
+              <StatCard
+                label="Earned TP"
+                value={`${playerData.stats.tpGames}x`}
               />
               <StatCard
                 label="Avg Score"
                 value={playerData.stats.avgScore.toFixed(1)}
               />
               <StatCard
-                label="Avg Ranking"
-                value={playerData.stats.avgRanking.toFixed(1)}
-              />
-              <StatCard
                 label="Best Ranking"
                 value={`#${playerData.stats.bestRanking}`}
-              />
-              <StatCard
-                label="Worst Ranking"
-                value={`#${playerData.stats.worstRanking}`}
               />
             </div>
 
