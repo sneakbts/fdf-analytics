@@ -457,17 +457,17 @@ export function HistoricalClient({
               />
             </div>
 
-            {/* Charts */}
-            <div className="grid lg:grid-cols-2 gap-8 mb-8">
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-4">Cumulative TP Earned</h3>
-                <CumulativeTPChart data={playerData.cumulativeTP} />
-              </div>
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-4">Ranking Over Time</h3>
-                <p className="text-gray-500 text-sm mb-2">Lower is better</p>
-                <RankingChart data={playerData.performances} />
-              </div>
+            {/* Cumulative TP Chart */}
+            <div className="bg-gray-900 rounded-lg p-4 mb-8">
+              <h3 className="text-lg font-semibold mb-4">Cumulative TP Earned</h3>
+              <CumulativeTPChart data={playerData.cumulativeTP} />
+            </div>
+
+            {/* Ranking Chart */}
+            <div className="bg-gray-900 rounded-lg p-4 mb-8">
+              <h3 className="text-lg font-semibold mb-4">Ranking Over Time</h3>
+              <p className="text-gray-500 text-sm mb-2">Lower is better</p>
+              <RankingChart data={playerData.performances} />
             </div>
 
             {/* Price Chart */}
