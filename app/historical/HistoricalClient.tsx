@@ -273,6 +273,44 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
   if (maxRanking > 27) displayTicks.push(30);
   const tickValues = displayTicks.map(transformRank);
 
+  // Custom layer to render colored points for top 3 ranks
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const customPointsLayer = (props: any) => {
+    const { points } = props;
+    return (
+      <g>
+        {points.map((point: any, index: number) => {
+          const originalRank = point.data.originalRank;
+          let fillColor = "#1F2937"; // default dark fill
+          let strokeColor = "#3B82F6"; // default blue stroke
+
+          if (originalRank === 1) {
+            fillColor = "#FFD700"; // gold
+            strokeColor = "#FFD700";
+          } else if (originalRank === 2) {
+            fillColor = "#C0C0C0"; // silver
+            strokeColor = "#C0C0C0";
+          } else if (originalRank === 3) {
+            fillColor = "#CD7F32"; // bronze
+            strokeColor = "#CD7F32";
+          }
+
+          return (
+            <circle
+              key={point.id || index}
+              cx={point.x}
+              cy={point.y}
+              r={originalRank <= 3 ? 6 : 4}
+              fill={fillColor}
+              stroke={strokeColor}
+              strokeWidth={2}
+            />
+          );
+        })}
+      </g>
+    );
+  };
+
   return (
     <div style={{ height: 300 }}>
       <ResponsiveLine
@@ -284,11 +322,9 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
         curve="monotoneX"
         colors={["#3B82F6"]}
         lineWidth={2}
-        pointSize={8}
-        pointBorderWidth={2}
-        pointBorderColor="#3B82F6"
-        pointColor="#1F2937"
+        enablePoints={false}
         enableGridX={false}
+        layers={["grid", "markers", "axes", "areas", "crosshair", "lines", customPointsLayer, "slices", "mesh", "legends"]}
         axisBottom={{
           tickSize: 5,
           tickPadding: 5,
