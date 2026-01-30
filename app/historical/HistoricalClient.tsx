@@ -516,7 +516,7 @@ export function HistoricalClient({
             {/* Ranking Chart */}
             <div className="bg-gray-900 rounded-lg p-4 mb-8">
               <h3 className="text-lg font-semibold mb-4">Ranking Over Time</h3>
-              <p className="text-gray-500 text-sm mb-2">Lower is better</p>
+              <p className="text-gray-500 text-sm mb-2">Lower is better, green denotes TP won</p>
               <RankingChart data={playerData.performances} position={playerData.position} />
             </div>
 
