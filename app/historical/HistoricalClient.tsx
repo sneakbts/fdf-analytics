@@ -295,7 +295,10 @@ function RankingChart({ data, position }: { data: PerformanceRecord[]; position:
   if (maxRanking > 27) displayTicks.push(30);
   const tickValues = displayTicks.map(transformRank);
 
-  // Custom layer to render colored points for top 3 ranks
+  // Custom layer to render colored points - green for top ranks based on position
+  // GK: 1-3 green, MID/DEF/FWD: 1-5 green
+  const greenThreshold = isGoalkeeper ? 3 : 5;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const customPointsLayer = (props: any) => {
     const { points } = props;
@@ -303,8 +306,8 @@ function RankingChart({ data, position }: { data: PerformanceRecord[]; position:
       <g>
         {points.map((point: any, index: number) => {
           const originalRank = point.data.originalRank;
-          const isTopThree = originalRank <= 3;
-          const strokeColor = isTopThree ? "#22C55E" : "#3B82F6"; // green for top 3, blue otherwise
+          const isGreen = originalRank <= greenThreshold;
+          const strokeColor = isGreen ? "#22C55E" : "#3B82F6"; // green for top ranks, blue otherwise
 
           return (
             <circle
