@@ -245,13 +245,11 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
   ];
 
   // Calculate max ranking for tick values
-  // Show 1, 2, 3 individually, then 5, 10, 15, etc.
+  // Show 1, 2, 3 individually, then 5, 10, 20, etc.
   const maxRanking = Math.max(...rankingData.map((d) => d.ranking!));
-  const tickValues = [1, 2, 3, 5];
-  if (maxRanking > 10) tickValues.push(10);
-  if (maxRanking > 15) tickValues.push(15);
+  const tickValues = [1, 2, 3, 5, 10];
   if (maxRanking > 20) tickValues.push(20);
-  if (maxRanking > 25) tickValues.push(25);
+  if (maxRanking > 30) tickValues.push(30);
 
   return (
     <div style={{ height: 300 }}>
@@ -260,7 +258,7 @@ function RankingChart({ data }: { data: PerformanceRecord[] }) {
         margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
         xScale={{ type: "time", format: "native", useUTC: false }}
         xFormat="time:%Y-%m-%d"
-        yScale={{ type: "linear", min: 1, max: "auto", reverse: true }}
+        yScale={{ type: "log", base: 2, min: 1, max: "auto", reverse: true }}
         curve="monotoneX"
         colors={["#3B82F6"]}
         lineWidth={2}
