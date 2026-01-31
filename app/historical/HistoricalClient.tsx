@@ -376,6 +376,78 @@ function RankingChart({ data, position }: { data: PerformanceRecord[]; position:
   );
 }
 
+function ScoreChart({ data }: { data: PerformanceRecord[] }) {
+  const scoreData = data.filter((d) => d.raw_score !== null);
+
+  if (scoreData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        No score data available
+      </div>
+    );
+  }
+
+  const chartData = [
+    {
+      id: "Score",
+      color: "#8B5CF6",
+      data: scoreData.map((d) => ({
+        x: new Date(d.match_date),
+        y: d.raw_score,
+      })),
+    },
+  ];
+
+  return (
+    <div style={{ height: 300 }}>
+      <ResponsiveLine
+        data={chartData}
+        margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+        xScale={{ type: "time", format: "native", useUTC: false }}
+        xFormat="time:%Y-%m-%d"
+        yScale={{ type: "linear", min: "auto", max: "auto" }}
+        curve="monotoneX"
+        colors={["#8B5CF6"]}
+        lineWidth={2}
+        pointSize={8}
+        pointBorderWidth={2}
+        pointBorderColor="#8B5CF6"
+        pointColor="#1F2937"
+        enableGridX={false}
+        axisBottom={{
+          tickSize: 5,
+          tickPadding: 5,
+          tickRotation: -45,
+          format: "%b %Y",
+        }}
+        axisLeft={{
+          tickSize: 5,
+          tickPadding: 5,
+        }}
+        theme={{
+          background: "transparent",
+          text: { fill: "#9CA3AF" },
+          axis: { ticks: { text: { fill: "#9CA3AF" } } },
+          grid: { line: { stroke: "#374151", strokeDasharray: "3 3" } },
+          crosshair: { line: { stroke: "#9CA3AF", strokeWidth: 1 } },
+        }}
+        useMesh={true}
+        tooltip={({ point }) => {
+          const data = point.data as { x: Date; y: number };
+          return (
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-2 shadow-lg">
+              <p className="text-white font-medium text-sm">
+                {data.x.toLocaleDateString()}
+              </p>
+              <p className="text-purple-400 text-sm">Score: {data.y}</p>
+            </div>
+          );
+        }}
+      />
+    </div>
+  );
+}
+
 function PriceChart({ data }: { data: { date: string; price: number }[] }) {
   if (data.length === 0) {
     return (
@@ -518,6 +590,13 @@ export function HistoricalClient({
               <h3 className="text-lg font-semibold mb-4">Ranking Over Time</h3>
               <p className="text-gray-500 text-sm mb-2">Lower is better, green denotes TP won</p>
               <RankingChart data={playerData.performances} position={playerData.position} />
+            </div>
+
+            {/* Score Chart */}
+            <div className="bg-gray-900 rounded-lg p-4 mb-8">
+              <h3 className="text-lg font-semibold mb-4">Score Over Time</h3>
+              <p className="text-gray-500 text-sm mb-2">Higher is better</p>
+              <ScoreChart data={playerData.performances} />
             </div>
 
             {/* Price Chart */}
