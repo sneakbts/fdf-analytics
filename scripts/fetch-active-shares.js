@@ -8,6 +8,8 @@
  *   4. Run: SPORT_TOKEN="your_token_here" npm run fetch-active-shares
  */
 
+require('dotenv').config({ path: '.env.local' });
+
 const { createClient } = require('@supabase/supabase-js');
 
 // Config

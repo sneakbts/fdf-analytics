@@ -1,9 +1,9 @@
 import { getSupabase } from "@/lib/supabase";
-import { TPvsPriceChart } from "@/components/charts/TPvsPriceChart";
 import { PositionTPStats } from "@/components/charts/PositionTPStats";
 import { ConsistencyChart } from "@/components/charts/ConsistencyChart";
 import { UniqueEarnersChart } from "@/components/charts/UniqueEarnersChart";
 import { TopTPPlayersChart } from "@/components/charts/TopTPPlayersChart";
+import { TPvsPriceSection } from "@/components/charts/TPvsPriceSection";
 import Link from "next/link";
 
 export const revalidate = 300; // Cache for 5 minutes
@@ -525,24 +525,8 @@ export default async function AnalyticsPage({
           <ConsistencyChart data={consistencyData} height={500} />
         </section>
 
-        {/* TP vs Price Charts */}
-        <section className="mb-12">
-          <h2 className="text-xl font-semibold mb-4">TP Won vs Price by Position</h2>
-          <p className="text-gray-400 text-sm mb-4">
-            Total TP earned compared to current token price
-          </p>
-          <div className="flex flex-col gap-8">
-            {(["Forward", "Midfielder", "Defender", "Goalkeeper"] as const).map((position) => (
-              <TPvsPriceChart
-                key={position}
-                data={dataByPosition[position] || []}
-                position={position}
-                color={POSITION_COLORS[position]}
-                height={500}
-              />
-            ))}
-          </div>
-        </section>
+        {/* TP vs Price Charts with Search */}
+        <TPvsPriceSection dataByPosition={dataByPosition} />
       </div>
     </div>
   );

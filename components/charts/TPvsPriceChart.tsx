@@ -14,6 +14,7 @@ interface TPvsPriceChartProps {
   position: string;
   color: string;
   height?: number;
+  highlightedPlayer?: string;
 }
 
 // Calculate power regression: y = a * x^b
@@ -78,11 +79,42 @@ const TrendLineLayer = ({ xScale, yScale, nodes, color }: any) => {
   );
 };
 
+// Custom node component to highlight searched player
+const CustomNode = ({
+  node,
+  color,
+  highlightedPlayer,
+}: {
+  node: any;
+  color: string;
+  highlightedPlayer?: string;
+}) => {
+  const isHighlighted =
+    highlightedPlayer &&
+    (node.data as any).name.toLowerCase().includes(highlightedPlayer.toLowerCase());
+
+  return (
+    <circle
+      cx={node.x}
+      cy={node.y}
+      r={isHighlighted ? 16 : 6}
+      fill={isHighlighted ? "#FFD700" : color}
+      stroke={isHighlighted ? "#FFA500" : "none"}
+      strokeWidth={isHighlighted ? 3 : 0}
+      style={{
+        filter: isHighlighted ? "drop-shadow(0 0 8px #FFD700)" : "none",
+        transition: "all 0.2s ease-in-out",
+      }}
+    />
+  );
+};
+
 export function TPvsPriceChart({
   data,
   position,
   color,
   height = 400,
+  highlightedPlayer,
 }: TPvsPriceChartProps) {
   const { chartData, minX, maxX, maxY, xTickValues } = useMemo(() => {
     if (!data || data.length === 0) {
@@ -215,7 +247,19 @@ export function TPvsPriceChart({
             "grid",
             "axes",
             (props: any) => <TrendLineLayer {...props} color={color} />,
-            "nodes",
+            // Custom nodes layer for highlighting
+            ({ nodes }: any) => (
+              <g>
+                {nodes.map((node: any) => (
+                  <CustomNode
+                    key={node.id}
+                    node={node}
+                    color={color}
+                    highlightedPlayer={highlightedPlayer}
+                  />
+                ))}
+              </g>
+            ),
             "markers",
             "mesh",
             "legends",

@@ -11,6 +11,8 @@
  *   SPORT_TOKEN="..." TOURNAMENT_ID="c5b07d6d-..." npm run fetch-tournament-data
  */
 
+require('dotenv').config({ path: '.env.local' });
+
 const { createClient } = require('@supabase/supabase-js');
 
 // Config
