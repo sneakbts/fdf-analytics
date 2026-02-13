@@ -22,6 +22,7 @@ const POSITION_COLORS: Record<string, string> = {
 
 export function TPvsPriceSection({ dataByPosition }: TPvsPriceSectionProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Get all unique player names for autocomplete suggestions
   const allPlayerNames = useMemo(() => {
@@ -68,6 +69,11 @@ export function TPvsPriceSection({ dataByPosition }: TPvsPriceSectionProps) {
             placeholder="Search player to highlight..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => {
+              // Delay hiding to allow clicking on suggestions
+              setTimeout(() => setShowSuggestions(false), 150);
+            }}
             className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
           />
           {searchTerm && (
@@ -81,12 +87,15 @@ export function TPvsPriceSection({ dataByPosition }: TPvsPriceSectionProps) {
         </div>
 
         {/* Suggestions dropdown */}
-        {suggestions.length > 0 && (
+        {showSuggestions && suggestions.length > 0 && (
           <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
             {suggestions.map((name) => (
               <button
                 key={name}
-                onClick={() => setSearchTerm(name)}
+                onClick={() => {
+                  setSearchTerm(name);
+                  setShowSuggestions(false);
+                }}
                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 transition-colors"
               >
                 {name}
